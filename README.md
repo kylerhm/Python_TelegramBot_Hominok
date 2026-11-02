@@ -1,2 +1,5 @@
 # Python_TelegramBot_Hominok
-TG_BOT
+Проект: Telegram-бот с функцией календаря
+Максим Хоминок
+kylerhm
+maxim@hominok.ru
