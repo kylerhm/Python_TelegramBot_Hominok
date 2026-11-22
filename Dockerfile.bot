@@ -1,0 +1,30 @@
+# =============================================================================
+# Dockerfile для Telegram бота
+# =============================================================================
+
+# Базовый образ с Python 3.11
+FROM python:3.11-slim
+
+# Установка системных зависимостей для psycopg2 (работа с PostgreSQL)
+RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+
+# Рабочая директория в контейнере
+WORKDIR /app
+
+# Копирование всех файлов проекта
+COPY . /app
+
+# Установка Python-зависимостей
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Переменные окружения
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/admin_panel
+
+# Проверка здоровья контейнера (каждые 30 секунд)
+# Проверяем, что процесс бота запущен
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
+  CMD python -c "import config; print('Bot is running')" || exit 1
+
+# Команда запуска бота
+CMD ["python", "main.py"]

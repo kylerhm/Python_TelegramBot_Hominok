@@ -1,0 +1,66 @@
+# =============================================================================
+# Docker Compose конфигурация для Telegram бота
+# =============================================================================
+# Сервисы:
+#   - db    : PostgreSQL база данных
+#   - web   : Django Admin Panel (веб-интерфейс)
+#   - bot   : Telegram бот
+# =============================================================================
+
+services:
+  # -------------------------------------------------------------------------
+  # PostgreSQL база данных
+  # -------------------------------------------------------------------------
+  db:
+    image: postgres:14
+    env_file:
+      - .env
+    ports:
+      - "5433:5432"  # Порт для локального подключения
+    volumes:
+      - db_data:/var/lib/postgresql/data  # Volume для сохранения данных
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # -------------------------------------------------------------------------
+  # Веб-приложение (Django Admin Panel)
+  # -------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"  # Порт Django-сервера
+    env_file:
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app  # Монтирование кода для hot-reload
+    command: sh -c "cd admin_panel && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+  # -------------------------------------------------------------------------
+  # Telegram бот
+  # -------------------------------------------------------------------------
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    env_file:
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app  # Монтирование кода для hot-reload
+    command: sh -c "cd /app && python main.py"
+
+# -------------------------------------------------------------------------
+# Volume для хранения данных PostgreSQL
+# -------------------------------------------------------------------------
+volumes:
+  db_data:
